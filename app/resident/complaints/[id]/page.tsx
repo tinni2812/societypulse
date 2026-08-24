@@ -5,6 +5,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../../../generated/prisma/client";
 import { authOptions } from "../../../../lib/auth";
 import RatingForm from "./RatingForm";
+import CommentForm from "./CommentForm";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
@@ -343,6 +344,7 @@ export default async function ResidentComplaintDetailsPage({
               ))
             )}
           </div>
+          <CommentForm complaintId={complaint.id} />
         </section>
 
         {/* Satisfaction */}
