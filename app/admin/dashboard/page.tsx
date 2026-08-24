@@ -645,7 +645,8 @@ const openResolvedTrends = Object.entries(
               : "Critical";
 
   return (
-    <main className="min-h-screen bg-gray-100 p-8 text-gray-900">
+    <main className="min-h-screen bg-gray-100 px-4 py-6 text-gray-900 sm:px-6 sm:py-8 lg:px-8">
+        <div className="mx-auto max-w-7xl">
         <div className="mb-8 rounded-xl bg-white p-6 shadow-sm">
   <div className="flex items-center justify-between">
     <h2 className="text-xl font-semibold text-gray-900">
@@ -659,7 +660,7 @@ const openResolvedTrends = Object.entries(
 
   <NotificationList notifications={notifications} />
 </div>
-      <div className="mx-auto max-w-7xl">
+      
         <div>
           <h1 className="text-3xl font-bold">
             Admin Dashboard
@@ -669,96 +670,183 @@ const openResolvedTrends = Object.entries(
             Welcome, {admin.name}.
           </p>
         </div>
+          {/* Maintenance Health Score */}
+<div className="mt-8 rounded-xl bg-white p-6 shadow-sm">
+  <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+    <div>
 
-        {/* Main metrics */}
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-gray-600">
-              Total Complaints
-            </p>
+      <p className="text-sm font-medium text-gray-600">
+        Maintenance Health Score
+      </p>
 
-            <p className="mt-2 text-3xl font-bold">
-              {totalComplaints}
-            </p>
-          </div>
+      <div className="mt-2 flex items-baseline gap-3">
+        <p className="text-4xl font-bold">
+          {maintenanceHealthScore !== null
+            ? `${maintenanceHealthScore}/100`
+            : "No Data"}
+        </p>
 
-          <div className="rounded-xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-gray-600">
-              Open
-            </p>
+        <p className="text-sm font-semibold text-gray-700">
+          {maintenanceHealthLabel}
+        </p>
+      </div>
+      {maintenanceHealthScore !== null && (
+  <div className="mt-4 max-w-xl">
+    <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+      <div
+        className="h-full rounded-full bg-gray-800 transition-all"
+        style={{
+          width: `${maintenanceHealthScore}%`,
+        }}
+      />
+    </div>
+  </div>
+)}
 
-            <p className="mt-2 text-3xl font-bold">
-              {openComplaints}
-            </p>
-          </div>
+      <p className="mt-2 max-w-xl text-sm text-gray-600">
+        Overall maintenance health based on active complaints,
+        priority burden, recurring issues, SLA performance, and
+        resolution performance.
+      </p>
+    </div>
 
-          <div className="rounded-xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-gray-600">
-              In Progress
-            </p>
+    <div className="grid grid-cols-3 gap-3 lg:min-w-[420px]">
+      <div className="rounded-lg bg-gray-50 p-4">
+        <p className="text-xs font-medium text-gray-500">
+          Active
+        </p>
 
-            <p className="mt-2 text-3xl font-bold">
-              {inProgressComplaints}
-            </p>
-          </div>
+        <p className="mt-1 text-xl font-semibold">
+          {openComplaints + inProgressComplaints}
+        </p>
+      </div>
 
-          <div className="rounded-xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-gray-600">
-              Overdue
-            </p>
+      <div className="rounded-lg bg-gray-50 p-4">
+        <p className="text-xs font-medium text-gray-500">
+          Recurring
+        </p>
 
-            <p className="mt-2 text-3xl font-bold">
-              {overdueComplaints}
-            </p>
-          </div>
-          <div className="rounded-xl bg-white p-6 shadow-sm">
-  <p className="text-sm font-medium text-gray-600">
-    SLA Due Soon
-  </p>
+        <p className="mt-1 text-xl font-semibold">
+          {Object.keys(recurringIssues).length}
+        </p>
+      </div>
 
-  <p className="mt-2 text-3xl font-bold">
-    {dueSoonComplaints}
-  </p>
+      <div className="rounded-lg bg-gray-50 p-4">
+        <p className="text-xs font-medium text-gray-500">
+          SLA
+        </p>
 
-  <p className="mt-1 text-xs text-gray-500">
-    Due within 24 hours
+        <p className="mt-1 text-xl font-semibold">
+          {slaCompliance}%
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+        {/* Core Operational Metrics */}
+<div className="mt-8">
+  <h2 className="text-xl font-semibold">
+    Operational Overview
+  </h2>
+
+  <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="rounded-xl bg-white p-5 shadow-sm sm:p-6">
+      <p className="text-sm font-medium text-gray-600">
+        Total Complaints
+      </p>
+
+      <p className="mt-2 text-3xl font-bold">
+        {totalComplaints}
+      </p>
+    </div>
+
+    <div className="rounded-xl bg-white p-5 shadow-sm sm:p-6">
+      <p className="text-sm font-medium text-gray-600">
+        Open
+      </p>
+
+      <p className="mt-2 text-3xl font-bold">
+        {openComplaints}
+      </p>
+    </div>
+
+    <div className="rounded-xl bg-white p-5 shadow-sm sm:p-6">
+      <p className="text-sm font-medium text-gray-600">
+        In Progress
+      </p>
+
+      <p className="mt-2 text-3xl font-bold">
+        {inProgressComplaints}
+      </p>
+    </div>
+
+    <div className="rounded-xl bg-white p-5 shadow-sm sm:p-6">
+      <p className="text-sm font-medium text-gray-600">
+        Overdue
+      </p>
+
+      <p className="mt-2 text-3xl font-bold">
+        {overdueComplaints}
+      </p>
+    </div>
+
+    <div className="rounded-xl bg-white p-5 shadow-sm sm:p-6">
+      <p className="text-sm font-medium text-gray-600">
+        SLA Due Soon
+      </p>
+
+      <p className="mt-2 text-3xl font-bold">
+        {dueSoonComplaints}
+      </p>
+
+      <p className="mt-1 text-xs text-gray-500">
+        Due within 24 hours
+      </p>
+    </div>
+
+    <div className="rounded-xl bg-white p-5 shadow-sm sm:p-6">
+      <p className="text-sm font-medium text-gray-600">
+        Resolved
+      </p>
+
+      <p className="mt-2 text-3xl font-bold">
+        {resolvedComplaints}
+      </p>
+    </div>
+
+    <div className="rounded-xl bg-white p-5 shadow-sm sm:p-6">
+      <p className="text-sm font-medium text-gray-600">
+        Closed
+      </p>
+
+      <p className="mt-2 text-3xl font-bold">
+        {closedComplaints}
+      </p>
+    </div>
+
+    <div className="rounded-xl bg-white p-5 shadow-sm sm:p-6">
+      <p className="text-sm font-medium text-gray-600">
+        SLA Compliance
+      </p>
+
+      <p className="mt-2 text-3xl font-bold">
+        {slaCompliance}%
+      </p>
+    </div>
+  </div>
+</div>
+<div className="mt-10">
+  <h2 className="text-2xl font-semibold">
+    Performance Analytics
+  </h2>
+
+  <p className="mt-1 text-sm text-gray-600">
+    Monitor SLA compliance, resolution performance, and complaint outcomes.
   </p>
 </div>
-        </div>
-
-        {/* Secondary metrics */}
-        <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-gray-600">
-              Resolved
-            </p>
-
-            <p className="mt-2 text-3xl font-bold">
-              {resolvedComplaints}
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-gray-600">
-              Closed
-            </p>
-
-            <p className="mt-2 text-3xl font-bold">
-              {closedComplaints}
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-gray-600">
-              SLA Compliance
-            </p>
-
-            <p className="mt-2 text-3xl font-bold">
-              {slaCompliance}%
-            </p>
-          </div>
-        </div>
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+{/* SLA Performance Analytics */}
+<div className="mt-8 grid gap-6 lg:grid-cols-2">
   <div className="rounded-xl bg-white p-6 shadow-sm">
     <h2 className="text-xl font-semibold">
       SLA Performance by Category
@@ -784,6 +872,7 @@ const openResolvedTrends = Object.entries(
                 <p className="font-medium text-gray-800">
                   {category}
                 </p>
+
                 <p className="text-xs text-gray-500">
                   {data.completed}/{data.total} completed
                 </p>
@@ -829,6 +918,7 @@ const openResolvedTrends = Object.entries(
                 <p className="font-medium text-gray-800">
                   {priority}
                 </p>
+
                 <p className="text-xs text-gray-500">
                   {data.completed}/{data.total} completed
                 </p>
@@ -1021,67 +1111,17 @@ const openResolvedTrends = Object.entries(
     </div>
   </div>
 </div>
-               {/* Maintenance Health Score */}
-<div className="mt-8 rounded-xl bg-white p-6 shadow-sm">
-  <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-    <div>
-      <p className="text-sm font-medium text-gray-600">
-        Maintenance Health Score
-      </p>
+             
+        <div className="mt-10">
+  <h2 className="text-2xl font-semibold">
+    Society Insights
+  </h2>
 
-      <div className="mt-2 flex items-baseline gap-3">
-        <p className="text-4xl font-bold">
-          {maintenanceHealthScore !== null
-            ? `${maintenanceHealthScore}/100`
-            : "No Data"}
-        </p>
-
-        <p className="text-sm font-semibold text-gray-700">
-          {maintenanceHealthLabel}
-        </p>
-      </div>
-
-      <p className="mt-2 max-w-xl text-sm text-gray-600">
-        Overall maintenance health based on active complaints,
-        priority burden, recurring issues, SLA performance, and
-        resolution performance.
-      </p>
-    </div>
-
-    <div className="grid grid-cols-3 gap-3 lg:min-w-[420px]">
-      <div className="rounded-lg bg-gray-50 p-4">
-        <p className="text-xs font-medium text-gray-500">
-          Active
-        </p>
-
-        <p className="mt-1 text-xl font-semibold">
-          {openComplaints + inProgressComplaints}
-        </p>
-      </div>
-
-      <div className="rounded-lg bg-gray-50 p-4">
-        <p className="text-xs font-medium text-gray-500">
-          Recurring
-        </p>
-
-        <p className="mt-1 text-xl font-semibold">
-          {Object.keys(recurringIssues).length}
-        </p>
-      </div>
-
-      <div className="rounded-lg bg-gray-50 p-4">
-        <p className="text-xs font-medium text-gray-500">
-          SLA
-        </p>
-
-        <p className="mt-1 text-xl font-semibold">
-          {slaCompliance}%
-        </p>
-      </div>
-    </div>
-  </div>
+  <p className="mt-1 text-sm text-gray-600">
+    Understand complaint patterns, recurring issues, location hotspots,
+    and resident impact across the society.
+  </p>
 </div>
-
         {/* Society overview */}
         <div className="mt-8 rounded-xl bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold">
@@ -1118,35 +1158,35 @@ const openResolvedTrends = Object.entries(
 
           {/* ADD THE NEW CATEGORY ANALYTICS HERE */}
           <div className="mt-6">
-            <h3 className="text-lg font-semibold">
-              Complaint Categories
-            </h3>
+  <h3 className="text-lg font-semibold">
+    Complaint Categories
+  </h3>
 
-            <div className="mt-4 space-y-3">
-              {Object.entries(categoryCounts)
-                .sort(([, a], [, b]) => b - a)
-                .map(([category, count]) => (
-                  <div
-                    key={category}
-                    className="flex items-center justify-between rounded-lg bg-gray-50 p-4"
-                  >
-                    <span className="font-medium text-gray-800">
-                      {category}
-                    </span>
+  <div className="mt-4 space-y-3">
+    {Object.entries(categoryCounts)
+      .sort(([, a], [, b]) => b - a)
+      .map(([category, count]) => (
+        <div
+          key={category}
+          className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800"
+        >
+          <span className="font-medium text-gray-800 dark:text-gray-100">
+            {category}
+          </span>
 
-                    <span className="rounded-full bg-gray-200 px-3 py-1 text-sm font-semibold">
-                      {count}
-                    </span>
-                  </div>
-                ))}
+          <span className="rounded-full bg-gray-200 px-3 py-1 text-sm font-semibold text-gray-800 dark:bg-gray-700 dark:text-gray-100">
+            {count}
+          </span>
+        </div>
+      ))}
 
-              {Object.keys(categoryCounts).length === 0 && (
-                <p className="text-sm text-gray-600">
-                  No category data available yet.
-                </p>
-              )}
-            </div>
-          </div>
+    {Object.keys(categoryCounts).length === 0 && (
+      <p className="text-sm text-gray-600 dark:text-gray-300">
+        No category data available yet.
+      </p>
+    )}
+  </div>
+</div>
            {/* Priority Analytics */}
           <div className="mt-8">
             <h3 className="text-lg font-semibold">
@@ -1265,26 +1305,26 @@ const openResolvedTrends = Object.entries(
       .sort((a, b) => b.complaintCount - a.complaintCount)
       .map((group) => (
         <a
-  key={group.id}
-  href={`/admin/complaint-groups/${group.id}`}
-  className="block rounded-lg bg-gray-50 p-4 transition hover:bg-gray-100 hover:shadow-sm"
->
+          key={group.id}
+          href={`/admin/complaint-groups/${group.id}`}
+          className="block rounded-lg bg-gray-50 p-4 transition hover:bg-gray-100 hover:shadow-sm dark:bg-gray-800 dark:hover:bg-gray-750"
+        >
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="font-medium text-gray-800">
+              <p className="font-medium text-gray-800 dark:text-gray-100">
                 {group.name}
               </p>
 
-              <p className="mt-1 text-sm text-gray-600">
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                 {group.category} • {group.complaintCount} complaints
               </p>
 
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {group.affectedResidents} affected residents
               </p>
             </div>
 
-            <span className="rounded-full bg-gray-200 px-3 py-1 text-sm font-semibold">
+            <span className="rounded-full bg-gray-200 px-3 py-1 text-sm font-semibold text-gray-800 dark:bg-gray-700 dark:text-gray-100">
               Recurring
             </span>
           </div>
@@ -1292,12 +1332,13 @@ const openResolvedTrends = Object.entries(
       ))}
 
     {Object.keys(recurringIssues).length === 0 && (
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-gray-600 dark:text-gray-300">
         No recurring issues detected yet.
       </p>
     )}
   </div>
 </div>
+
 {/* Complaint Hotspots */}
 <div className="mt-8">
   <div>
@@ -1305,7 +1346,7 @@ const openResolvedTrends = Object.entries(
       Complaint Hotspots
     </h3>
 
-    <p className="mt-1 text-sm text-gray-600">
+    <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
       Locations are ranked using complaint concentration,
       resident impact, active burden, priority severity,
       and recurring issues.
@@ -1317,23 +1358,23 @@ const openResolvedTrends = Object.entries(
       rankedHotspots.map((hotspot, index) => (
         <div
           key={hotspot.location}
-          className="rounded-lg bg-gray-50 p-5"
+          className="rounded-lg bg-gray-50 p-5 dark:bg-gray-800"
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex items-center gap-3">
-                <span className="rounded-full bg-gray-200 px-3 py-1 text-sm font-bold">
+                <span className="rounded-full bg-gray-200 px-3 py-1 text-sm font-bold text-gray-800 dark:bg-gray-700 dark:text-gray-100">
                   #{index + 1}
                 </span>
 
-                <p className="font-semibold text-gray-900">
+                <p className="font-semibold text-gray-900 dark:text-gray-100">
                   {hotspot.location}
                 </p>
               </div>
 
               <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     Complaints
                   </p>
                   <p className="mt-1 font-semibold">
@@ -1342,7 +1383,7 @@ const openResolvedTrends = Object.entries(
                 </div>
 
                 <div>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     Affected Residents
                   </p>
                   <p className="mt-1 font-semibold">
@@ -1351,7 +1392,7 @@ const openResolvedTrends = Object.entries(
                 </div>
 
                 <div>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     Active Complaints
                   </p>
                   <p className="mt-1 font-semibold">
@@ -1360,7 +1401,7 @@ const openResolvedTrends = Object.entries(
                 </div>
 
                 <div>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     High Priority
                   </p>
                   <p className="mt-1 font-semibold">
@@ -1371,31 +1412,31 @@ const openResolvedTrends = Object.entries(
 
               <div className="mt-3 flex flex-wrap gap-2">
                 {hotspot.highPriorityComplaints > 0 && (
-                  <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold">
+                  <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-800 dark:bg-gray-700 dark:text-gray-100">
                     High Priority
                   </span>
                 )}
 
                 {hotspot.recurringComplaints > 0 && (
-                  <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold">
+                  <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-800 dark:bg-gray-700 dark:text-gray-100">
                     Recurring Issue
                   </span>
                 )}
 
                 {hotspot.activeComplaints > 0 && (
-                  <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold">
+                  <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-800 dark:bg-gray-700 dark:text-gray-100">
                     Active Problem
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="shrink-0 rounded-lg bg-white px-4 py-3 text-center shadow-sm">
-              <p className="text-xs text-gray-500">
+            <div className="shrink-0 rounded-lg bg-white px-4 py-3 text-center shadow-sm dark:bg-gray-700">
+              <p className="text-xs text-gray-500 dark:text-gray-300">
                 Hotspot Score
               </p>
 
-              <p className="mt-1 text-2xl font-bold">
+              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {hotspot.hotspotScore}/100
               </p>
             </div>
@@ -1403,12 +1444,12 @@ const openResolvedTrends = Object.entries(
         </div>
       ))
     ) : (
-      <div className="rounded-lg bg-gray-50 p-5">
-        <p className="font-medium text-gray-800">
+      <div className="rounded-lg bg-gray-50 p-5 dark:bg-gray-800">
+        <p className="font-medium text-gray-800 dark:text-gray-100">
           No significant hotspots detected.
         </p>
 
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
           Hotspots will appear when complaint activity,
           resident impact, priority, or recurring issues
           indicate a meaningful location-level problem.
@@ -1417,7 +1458,6 @@ const openResolvedTrends = Object.entries(
     )}
   </div>
 </div>
-
 {/* Resident Impact Analytics */}
 <div className="mt-8">
   <h3 className="text-lg font-semibold">

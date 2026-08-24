@@ -65,17 +65,30 @@ export default async function ResidentComplaintsPage() {
   });
 
   const now = new Date();
+  const statusStyles: Record<string, string> = {
+  OPEN: "bg-blue-100 text-blue-700",
+  IN_PROGRESS: "bg-yellow-100 text-yellow-700",
+  RESOLVED: "bg-green-100 text-green-700",
+  CLOSED: "bg-gray-100 text-gray-700",
+};
+
+const priorityStyles: Record<string, string> = {
+  LOW: "bg-gray-100 text-gray-700",
+  MEDIUM: "bg-blue-100 text-blue-700",
+  HIGH: "bg-orange-100 text-orange-700",
+  CRITICAL: "bg-red-100 text-red-700",
+};
 
   return (
     <main className="min-h-screen bg-gray-100 p-8 text-gray-900">
       <div className="mx-auto max-w-5xl">
         <div>
-          <a
-            href="/resident/dashboard"
-            className="text-sm font-medium text-blue-600 hover:underline"
-          >
-            ← Back to Dashboard
-          </a>
+          <Link
+  href="/resident/dashboard"
+  className="text-sm font-medium text-blue-600 hover:underline"
+>
+  ← Back to Dashboard
+</Link>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
   <div>
@@ -101,11 +114,11 @@ export default async function ResidentComplaintsPage() {
 
         <div className="mt-8 space-y-4">
           {complaints.map((complaint) => (
-            <a
-              key={complaint.id}
-              href={`/resident/complaints/${complaint.id}`}
-              className="block rounded-xl bg-white p-6 shadow-sm transition hover:shadow-md"
-            >
+            <Link
+  key={complaint.id}
+  href={`/resident/complaints/${complaint.id}`}
+  className="block rounded-xl bg-white p-6 shadow-sm transition hover:shadow-md"
+>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="text-lg font-semibold">
@@ -117,14 +130,8 @@ export default async function ResidentComplaintsPage() {
                   </p>
 
                   <p className="mt-1 text-sm text-gray-600">
-                    {complaint.location.name}
-                    {complaint.location.block
-                      ? ` • Block ${complaint.location.block}`
-                      : ""}
-                    {complaint.location.floor
-                      ? ` • Floor ${complaint.location.floor}`
-                      : ""}
-                  </p>
+  {complaint.location.name}
+</p>
 
                   <p className="mt-2 text-xs text-gray-500">
                     Submitted{" "}
@@ -133,13 +140,23 @@ export default async function ResidentComplaintsPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold">
-                    {complaint.priorityLabel}
-                  </span>
+                  <span
+  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+    priorityStyles[complaint.priorityLabel] ??
+    "bg-gray-100 text-gray-700"
+  }`}
+>
+  {complaint.priorityLabel}
+</span>
 
-                  <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold">
-                    {complaint.status}
-                  </span>
+                  <span
+  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+    statusStyles[complaint.status] ??
+    "bg-gray-100 text-gray-700"
+  }`}
+>
+  {complaint.status.replace("_", " ")}
+</span>
 
                   {complaint.dueAt && (
                     <span
@@ -162,7 +179,7 @@ export default async function ResidentComplaintsPage() {
                   )}
                 </div>
               </div>
-            </a>
+            </Link>
           ))}
 
           {complaints.length === 0 && (
@@ -171,12 +188,12 @@ export default async function ResidentComplaintsPage() {
                 You have not submitted any complaints yet.
               </p>
 
-              <a
-                href="/resident/complaints/new"
-                className="mt-4 inline-block rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white"
-              >
-                Submit a Complaint
-              </a>
+              <Link
+  href="/resident/complaints/new"
+  className="mt-4 inline-block rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white"
+>
+  Submit a Complaint
+</Link>
             </div>
           )}
         </div>

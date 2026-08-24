@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-
+import Link from "next/link";
 export default function LoginPage() {
   const router = useRouter();
 
@@ -50,14 +50,15 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+    <main className="relative flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
+  
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg dark:bg-gray-900">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-gray-900">
             SocietyPulse
           </h1>
 
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             Sign in to manage your society
           </p>
         </div>
@@ -66,7 +67,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="email"
-              className="mb-2 block text-sm font-medium text-gray-700"
+              className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200"
             >
               Email
             </label>
@@ -77,7 +78,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-gray-500"
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
               placeholder="you@example.com"
             />
           </div>
@@ -85,7 +86,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="password"
-              className="mb-2 block text-sm font-medium text-gray-700"
+              className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200"
             >
               Password
             </label>
@@ -96,7 +97,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-gray-500"
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
               placeholder="••••••••"
             />
           </div>
@@ -115,6 +116,15 @@ export default function LoginPage() {
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
+        <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+  Don't have an account?{" "}
+  <Link
+    href="/register"
+    className="font-semibold text-blue-600 hover:underline dark:text-blue-400"
+  >
+    Create an account
+  </Link>
+</div>
       </div>
     </main>
   );
