@@ -1,0 +1,49 @@
+SocietyPulse – System Design Write-up
+
+SocietyPulse is a full-stack residential society maintenance platform designed to make complaint management more structured, transparent, and data-driven. The system provides separate workflows for residents and administrators and uses Next.js, TypeScript, Prisma, PostgreSQL, NextAuth, Neon, and Vercel.
+
+Complaint History Model
+
+Every complaint is stored with important information such as its title, description, category, severity, priority, location, reporter, society, SLA information, and current status.
+
+Instead of simply replacing the old status whenever a complaint changes, SocietyPulse maintains a separate ComplaintStatusHistory model. This allows status transitions such as OPEN → IN_PROGRESS → RESOLVED → CLOSED to be preserved as historical records. This creates an auditable timeline of the complaint and allows administrators to understand how an issue progressed over time.
+
+Complaints can also have comments, allowing residents and administrators to communicate about the issue. Once a complaint is resolved, residents can provide a satisfaction rating.
+
+Overdue Detection
+
+SocietyPulse uses Service Level Agreements (SLAs) to determine how quickly different types of complaints should be resolved.
+
+When a complaint is submitted, the system calculates its priority using two important factors: the severity of the problem and the estimated number of residents affected. Based on this calculation, the complaint is classified as LOW, MEDIUM, HIGH, or CRITICAL.
+
+The system then identifies the most suitable SLA based on the complaint category and priority. The expected resolution time is converted into a deadline called dueAt.
+
+For example, if a complaint has an SLA of 24 hours, its deadline is calculated as the complaint creation time plus 24 hours.
+
+The administrator dashboard compares this deadline with the current time. If an unresolved complaint has passed its deadline, it is identified as overdue. This allows administrators to quickly identify delayed complaints and monitor overall SLA compliance.
+
+Photo Handling
+
+Photo upload was explored during development but was intentionally removed from the final submitted version of SocietyPulse. Therefore, the deployed application does not currently depend on or claim any photo-upload functionality.
+
+The final complaint system instead focuses on structured information such as the complaint description, category, severity, location, affected residents, priority, SLA, and complaint history.
+
+Notification Flow
+
+SocietyPulse uses database-backed notifications to keep residents and administrators informed about relevant complaint and system events.
+
+When an important event occurs, the relevant notification is created and associated with the appropriate user. The notification remains available until the user reads it. Dedicated notification API routes allow users to mark notifications as read.
+
+This provides a persistent notification mechanism instead of relying only on temporary browser messages.
+
+Novelty Features
+
+SocietyPulse goes beyond a basic complaint submission system by introducing several decision-support features.
+
+The system automatically calculates complaint priority based on severity and the estimated number of affected residents. It also automatically assigns suitable SLAs and detects overdue complaints.
+
+Another important feature is recurring complaint detection. Complaints belonging to the same society, category, and location can be grouped together. This helps administrators identify repeated or systemic maintenance problems instead of treating every complaint as an isolated issue.
+
+The admin dashboard also provides maintenance analytics covering complaint volume, status distribution, priority distribution, categories, locations, complaint trends, recurring issues, and SLA compliance.
+
+Together, these features transform SocietyPulse from a simple complaint-registration platform into a structured maintenance-management and decision-support system.
