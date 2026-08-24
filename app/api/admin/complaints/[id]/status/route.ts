@@ -80,15 +80,17 @@ export async function PATCH(
     }
 
     const complaint = await prisma.complaint.findFirst({
-      where: {
-        id,
-        societyId: admin.societyId,
-      },
-      select: {
-        id: true,
-        status: true,
-      },
-    });
+  where: {
+    id,
+    societyId: admin.societyId,
+  },
+  select: {
+    id: true,
+    title: true,
+    status: true,
+    reporterId: true,
+  },
+});
 
     if (!complaint) {
       return NextResponse.json(
@@ -152,6 +154,19 @@ export async function PATCH(
           changedById: admin.id,
         },
       });
+      await tx.notification.create({
+  data: {
+    title: "Complaint Status Updated",
+    message: `Your complaint "${updated.title}" is now ${status.replace(
+      "_",
+      " ",
+    )}.`,
+    type: "STATUS_CHANGE",
+    recipientId: complaint.reporterId,
+    createdById: admin.id,
+    complaintId: complaint.id,
+  },
+});
 
       return updated;
     });

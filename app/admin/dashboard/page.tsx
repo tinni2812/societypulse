@@ -1,5 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import NotificationItem from "./NotificationItem";
+import NotificationList from "./NotificationList";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../../generated/prisma/client";
@@ -23,18 +25,28 @@ export default async function AdminDashboard() {
   }
 
   const admin = await prisma.user.findUnique({
-    where: {
-      email: session.user.email!,
-    },
-    select: {
-      societyId: true,
-      name: true,
-    },
-  });
+  where: {
+    email: session.user.email!,
+  },
+  select: {
+    id: true,
+    societyId: true,
+    name: true,
+  },
+});
 
   if (!admin) {
     redirect("/login");
   }
+  const notifications = await prisma.notification.findMany({
+  where: {
+    recipientId: admin.id,
+  },
+  orderBy: {
+    createdAt: "desc",
+  },
+  take: 10,
+});
 const complaints = await prisma.complaint.findMany({
   where: {
     societyId: admin.societyId,
@@ -159,12 +171,16 @@ const recurringIssues = complaints
   );
 const locationHotspots = complaints.reduce(
   (locations, complaint) => {
-    const key = complaint.location.name;
+    const key =
+  complaint.location.name.trim() || "Unknown Location";
 
     if (!locations[key]) {
       locations[key] = {
         complaintCount: 0,
         affectedResidents: 0,
+        activeComplaints: 0,
+        highPriorityComplaints: 0,
+        recurringComplaints: 0,
       };
     }
 
@@ -174,6 +190,28 @@ const locationHotspots = complaints.reduce(
       complaint.affectedResidentsVerified ??
       complaint.affectedResidentsEstimated;
 
+    if (
+      complaint.status === "OPEN" ||
+      complaint.status === "IN_PROGRESS"
+    ) {
+      locations[key].activeComplaints += 1;
+    }
+
+    if (
+      complaint.priorityLabel === "HIGH" ||
+      complaint.priorityLabel === "CRITICAL"
+    ) {
+      locations[key].highPriorityComplaints += 1;
+    }
+
+    if (
+      complaint.group !== null &&
+      complaint.group.isActive &&
+      complaint.group.complaintCount > 1
+    ) {
+      locations[key].recurringComplaints += 1;
+    }
+
     return locations;
   },
   {} as Record<
@@ -181,9 +219,91 @@ const locationHotspots = complaints.reduce(
     {
       complaintCount: number;
       affectedResidents: number;
+      activeComplaints: number;
+      highPriorityComplaints: number;
+      recurringComplaints: number;
     }
   >,
 );
+const hotspotLocations = Object.entries(locationHotspots);
+
+const maxComplaintCount = Math.max(
+  ...hotspotLocations.map(([, hotspot]) => hotspot.complaintCount),
+  1,
+);
+
+const maxAffectedResidents = Math.max(
+  ...hotspotLocations.map(([, hotspot]) => hotspot.affectedResidents),
+  1,
+);
+
+const maxActiveComplaints = Math.max(
+  ...hotspotLocations.map(([, hotspot]) => hotspot.activeComplaints),
+  1,
+);
+
+const maxHighPriorityComplaints = Math.max(
+  ...hotspotLocations.map(
+    ([, hotspot]) => hotspot.highPriorityComplaints,
+  ),
+  1,
+);
+
+const maxRecurringComplaints = Math.max(
+  ...hotspotLocations.map(
+    ([, hotspot]) => hotspot.recurringComplaints,
+  ),
+  1,
+);
+
+const rankedHotspots = hotspotLocations
+  .map(([location, hotspot]) => {
+    const complaintConcentration =
+      (hotspot.complaintCount / maxComplaintCount) * 100;
+
+    const residentImpact =
+      (hotspot.affectedResidents / maxAffectedResidents) * 100;
+
+    const activeBurden =
+      (hotspot.activeComplaints / maxActiveComplaints) * 100;
+
+    const priorityBurden =
+      (hotspot.highPriorityComplaints /
+        maxHighPriorityComplaints) *
+      100;
+
+    const recurringBurden =
+      (hotspot.recurringComplaints /
+        maxRecurringComplaints) *
+      100;
+
+    const hotspotScore = Math.round(
+      complaintConcentration * 0.30 +
+        residentImpact * 0.25 +
+        activeBurden * 0.20 +
+        priorityBurden * 0.15 +
+        recurringBurden * 0.10,
+    );
+
+    return {
+      location,
+      ...hotspot,
+      hotspotScore,
+    };
+  })
+  .filter(
+    (hotspot) =>
+      hotspot.complaintCount > 1 ||
+      hotspot.activeComplaints > 1 ||
+      hotspot.highPriorityComplaints > 0 ||
+      hotspot.recurringComplaints > 0,
+  )
+  .sort(
+    (a, b) =>
+      b.hotspotScore - a.hotspotScore ||
+      b.affectedResidents - a.affectedResidents ||
+      b.complaintCount - a.complaintCount,
+  );
 
   const openComplaints = complaints.filter(
     (complaint) => complaint.status === "OPEN",
@@ -230,9 +350,89 @@ const totalImpact = complaints.length;
     complaintsWithSla > 0
       ? Math.round((completedWithSla / complaintsWithSla) * 100)
       : 100;
+        const highPriorityComplaints =
+    (priorityCounts["HIGH"] || 0) +
+    (priorityCounts["CRITICAL"] || 0);
+
+  const activeComplaintRate =
+    totalComplaints > 0
+      ? (openComplaints + inProgressComplaints) / totalComplaints
+      : 0;
+
+  const highPriorityRate =
+    totalComplaints > 0
+      ? highPriorityComplaints / totalComplaints
+      : 0;
+
+  const recurringComplaintCount = Object.values(
+    recurringIssues,
+  ).reduce(
+    (total, group) => total + group.complaintCount,
+    0,
+  );
+
+  const recurringIssueRate =
+    totalComplaints > 0
+      ? Math.min(recurringComplaintCount / totalComplaints, 1)
+      : 0;
+
+  const resolutionRate =
+    totalComplaints > 0
+      ? (resolvedComplaints + closedComplaints) /
+        totalComplaints
+      : 0;
+
+  const activeComplaintHealth =
+    (1 - activeComplaintRate) * 100;
+
+  const priorityHealth =
+    (1 - highPriorityRate) * 100;
+
+  const recurringHealth =
+    (1 - recurringIssueRate) * 100;
+
+  const resolutionHealth =
+    resolutionRate * 100;
+
+  const maintenanceHealthScore =
+    totalComplaints > 0
+      ? Math.round(
+          activeComplaintHealth * 0.25 +
+            priorityHealth * 0.20 +
+            recurringHealth * 0.20 +
+            slaCompliance * 0.20 +
+            resolutionHealth * 0.15,
+        )
+      : null;
+
+  const maintenanceHealthLabel =
+    maintenanceHealthScore === null
+      ? "No Data"
+      : maintenanceHealthScore >= 80
+        ? "Excellent"
+        : maintenanceHealthScore >= 65
+          ? "Good"
+          : maintenanceHealthScore >= 50
+            ? "Needs Attention"
+            : maintenanceHealthScore >= 25
+              ? "Poor"
+              : "Critical";
 
   return (
     <main className="min-h-screen bg-gray-100 p-8 text-gray-900">
+        <div className="mb-8 rounded-xl bg-white p-6 shadow-sm">
+  <div className="flex items-center justify-between">
+    <h2 className="text-xl font-semibold text-gray-900">
+      Notifications
+    </h2>
+
+    <span className="text-sm text-gray-500">
+      {notifications.filter((notification) => !notification.isRead).length} unread
+    </span>
+  </div>
+
+  <NotificationList notifications={notifications} />
+</div>
       <div className="mx-auto max-w-7xl">
         <div>
           <h1 className="text-3xl font-bold">
@@ -319,6 +519,66 @@ const totalImpact = complaints.length;
             </p>
           </div>
         </div>
+               {/* Maintenance Health Score */}
+<div className="mt-8 rounded-xl bg-white p-6 shadow-sm">
+  <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+    <div>
+      <p className="text-sm font-medium text-gray-600">
+        Maintenance Health Score
+      </p>
+
+      <div className="mt-2 flex items-baseline gap-3">
+        <p className="text-4xl font-bold">
+          {maintenanceHealthScore !== null
+            ? `${maintenanceHealthScore}/100`
+            : "No Data"}
+        </p>
+
+        <p className="text-sm font-semibold text-gray-700">
+          {maintenanceHealthLabel}
+        </p>
+      </div>
+
+      <p className="mt-2 max-w-xl text-sm text-gray-600">
+        Overall maintenance health based on active complaints,
+        priority burden, recurring issues, SLA performance, and
+        resolution performance.
+      </p>
+    </div>
+
+    <div className="grid grid-cols-3 gap-3 lg:min-w-[420px]">
+      <div className="rounded-lg bg-gray-50 p-4">
+        <p className="text-xs font-medium text-gray-500">
+          Active
+        </p>
+
+        <p className="mt-1 text-xl font-semibold">
+          {openComplaints + inProgressComplaints}
+        </p>
+      </div>
+
+      <div className="rounded-lg bg-gray-50 p-4">
+        <p className="text-xs font-medium text-gray-500">
+          Recurring
+        </p>
+
+        <p className="mt-1 text-xl font-semibold">
+          {Object.keys(recurringIssues).length}
+        </p>
+      </div>
+
+      <div className="rounded-lg bg-gray-50 p-4">
+        <p className="text-xs font-medium text-gray-500">
+          SLA
+        </p>
+
+        <p className="mt-1 text-xl font-semibold">
+          {slaCompliance}%
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
 
         {/* Society overview */}
         <div className="mt-8 rounded-xl bg-white p-6 shadow-sm">
@@ -538,54 +798,124 @@ const totalImpact = complaints.length;
 </div>
 {/* Complaint Hotspots */}
 <div className="mt-8">
-  <h3 className="text-lg font-semibold">
-    Complaint Hotspots
-  </h3>
+  <div>
+    <h3 className="text-lg font-semibold">
+      Complaint Hotspots
+    </h3>
 
-  <div className="mt-4 space-y-3">
-    {Object.entries(locationHotspots)
-      .sort(
-        ([, a], [, b]) =>
-          b.affectedResidents - a.affectedResidents ||
-          b.complaintCount - a.complaintCount,
-      )
-      .map(([location, hotspot]) => (
+    <p className="mt-1 text-sm text-gray-600">
+      Locations are ranked using complaint concentration,
+      resident impact, active burden, priority severity,
+      and recurring issues.
+    </p>
+  </div>
+
+  <div className="mt-4 space-y-4">
+    {rankedHotspots.length > 0 ? (
+      rankedHotspots.map((hotspot, index) => (
         <div
-          key={location}
-          className="rounded-lg bg-gray-50 p-4"
+          key={hotspot.location}
+          className="rounded-lg bg-gray-50 p-5"
         >
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="font-medium text-gray-800">
-                {location}
-              </p>
+              <div className="flex items-center gap-3">
+                <span className="rounded-full bg-gray-200 px-3 py-1 text-sm font-bold">
+                  #{index + 1}
+                </span>
 
-              <p className="mt-1 text-sm text-gray-600">
-                {hotspot.complaintCount}{" "}
-                {hotspot.complaintCount === 1
-                  ? "complaint"
-                  : "complaints"}
-              </p>
+                <p className="font-semibold text-gray-900">
+                  {hotspot.location}
+                </p>
+              </div>
 
-              <p className="mt-1 text-xs text-gray-500">
-                {hotspot.affectedResidents} affected residents
-              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <p className="text-xs text-gray-500">
+                    Complaints
+                  </p>
+                  <p className="mt-1 font-semibold">
+                    {hotspot.complaintCount}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-gray-500">
+                    Affected Residents
+                  </p>
+                  <p className="mt-1 font-semibold">
+                    {hotspot.affectedResidents}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-gray-500">
+                    Active Complaints
+                  </p>
+                  <p className="mt-1 font-semibold">
+                    {hotspot.activeComplaints}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-gray-500">
+                    High Priority
+                  </p>
+                  <p className="mt-1 font-semibold">
+                    {hotspot.highPriorityComplaints}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {hotspot.highPriorityComplaints > 0 && (
+                  <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold">
+                    High Priority
+                  </span>
+                )}
+
+                {hotspot.recurringComplaints > 0 && (
+                  <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold">
+                    Recurring Issue
+                  </span>
+                )}
+
+                {hotspot.activeComplaints > 0 && (
+                  <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold">
+                    Active Problem
+                  </span>
+                )}
+              </div>
             </div>
 
-            <span className="rounded-full bg-gray-200 px-3 py-1 text-sm font-semibold">
-              Hotspot
-            </span>
+            <div className="shrink-0 rounded-lg bg-white px-4 py-3 text-center shadow-sm">
+              <p className="text-xs text-gray-500">
+                Hotspot Score
+              </p>
+
+              <p className="mt-1 text-2xl font-bold">
+                {hotspot.hotspotScore}/100
+              </p>
+            </div>
           </div>
         </div>
-      ))}
+      ))
+    ) : (
+      <div className="rounded-lg bg-gray-50 p-5">
+        <p className="font-medium text-gray-800">
+          No significant hotspots detected.
+        </p>
 
-    {Object.keys(locationHotspots).length === 0 && (
-      <p className="text-sm text-gray-600">
-        No location data available yet.
-      </p>
+        <p className="mt-1 text-sm text-gray-600">
+          Hotspots will appear when complaint activity,
+          resident impact, priority, or recurring issues
+          indicate a meaningful location-level problem.
+        </p>
+      </div>
     )}
   </div>
 </div>
+
 {/* Resident Impact Analytics */}
 <div className="mt-8">
   <h3 className="text-lg font-semibold">

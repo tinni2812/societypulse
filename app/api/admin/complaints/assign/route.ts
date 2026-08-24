@@ -16,17 +16,11 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     if (session.user.role !== "ADMIN") {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 },
-      );
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = await request.json();
@@ -66,6 +60,8 @@ export async function POST(request: Request) {
       },
       select: {
         id: true,
+        title: true,
+        assignedToId: true,
       },
     });
 
@@ -97,6 +93,8 @@ export async function POST(request: Request) {
       }
     }
 
+    const assignmentChanged = complaint.assignedToId !== assigneeId;
+
     const updatedComplaint = await prisma.complaint.update({
       where: {
         id: complaint.id,
@@ -109,6 +107,18 @@ export async function POST(request: Request) {
         assignedToId: true,
       },
     });
+    if (assignmentChanged && assigneeId) {
+      await prisma.notification.create({
+        data: {
+          title: "Complaint Assigned",
+          message: `You have been assigned complaint: "${complaint.title}".`,
+          type: "COMPLAINT_ASSIGNED",
+          recipientId: assigneeId,
+          createdById: admin.id,
+          complaintId: complaint.id,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
