@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 200">
+  <defs>
+    <style>
+      .badge { fill: #123F63; }
+      .pulse { fill: none; stroke: #2DE0D1; stroke-width: 11; stroke-linecap: round; stroke-linejoin: round; }
+      .node { fill: #FFFFFF; }
+      .node-ring { fill: none; stroke: #2DE0D1; stroke-width: 4; }
+      .wordmark { font-family: 'Segoe UI', Helvetica, Arial, sans-serif; font-weight: 600; }
+      .society { fill: #FFFFFF; }
+      .pulse-text { fill: #2DE0D1; font-weight: 800; }
+    </style>
+  </defs>
+
+  <!-- Icon (200x200, badge with skyline+pulse line) -->
+  <g transform="translate(0,0)">
+    <rect x="4" y="4" width="192" height="192" rx="44" class="badge"/>
+    <path class="pulse" d="M42,138
+             L63,138
+             L63,101
+             L80,101
+             L80,138
+             L92,138
+             L104,58
+             L116,58
+             L116,138
+             L127,138
+             L127,113
+             L145,113
+             L145,138
+             L160,138"/>
+    <circle cx="71.5" cy="101" r="7" class="node"/>
+    <circle cx="71.5" cy="101" r="7" class="node-ring"/>
+    <circle cx="110" cy="58" r="7.5" class="node"/>
+    <circle cx="110" cy="58" r="7.5" class="node-ring"/>
+    <circle cx="136" cy="113" r="7" class="node"/>
+    <circle cx="136" cy="113" r="7" class="node-ring"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="226" y="122" class="wordmark" font-size="66">
+    <tspan class="society">Society</tspan><tspan class="pulse-text">Pulse</tspan>
+  </text>
+</svg>

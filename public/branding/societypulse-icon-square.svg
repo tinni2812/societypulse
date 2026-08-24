@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <defs>
+    <style>
+      .badge { fill: #0E3A5C; }
+      .pulse { fill: none; stroke: #22D3C6; stroke-width: 11; stroke-linecap: round; stroke-linejoin: round; }
+      .node { fill: #FFFFFF; }
+      .node-ring { fill: none; stroke: #22D3C6; stroke-width: 4; }
+    </style>
+  </defs>
+
+  <!-- Badge container -->
+  <rect x="4" y="4" width="232" height="232" rx="54" class="badge"/>
+
+  <!-- Skyline + heartbeat pulse line (single continuous stroke) -->
+  <path class="pulse" d="M52,166
+           L76,166
+           L76,122
+           L96,122
+           L96,166
+           L110,166
+           L124,70
+           L138,70
+           L138,166
+           L150,166
+           L150,136
+           L170,136
+           L170,166
+           L188,166"/>
+
+  <!-- Connection nodes at the peaks (community / connected residents) -->
+  <circle cx="86" cy="122" r="8" class="node"/>
+  <circle cx="86" cy="122" r="8" class="node-ring"/>
+
+  <circle cx="131" cy="70" r="9" class="node"/>
+  <circle cx="131" cy="70" r="9" class="node-ring"/>
+
+  <circle cx="160" cy="136" r="8" class="node"/>
+  <circle cx="160" cy="136" r="8" class="node-ring"/>
+</svg>

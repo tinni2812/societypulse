@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -69,15 +70,21 @@ export default function Navbar({ name, role }: NavbarProps) {
         {/* Brand */}
         <Link
           href={brandHref}
-          className="flex items-center gap-2"
+          className="flex items-center"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-lg font-bold text-white">
-            S
-          </div>
+          {/* Light mode logo */}
+          <img
+            src="/branding/societypulse-horizontal-light.svg"
+            alt="SocietyPulse"
+            className="h-9 w-auto dark:hidden"
+          />
 
-          <span className="text-lg font-bold text-gray-900 dark:text-white">
-            SocietyPulse
-          </span>
+          {/* Dark mode logo */}
+          <img
+            src="/branding/societypulse-horizontal-dark.svg"
+            alt="SocietyPulse"
+            className="hidden h-9 w-auto dark:block"
+          />
         </Link>
 
         {/* Desktop navigation */}
@@ -164,3 +171,4 @@ export default function Navbar({ name, role }: NavbarProps) {
     </header>
   );
 }
+

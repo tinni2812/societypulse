@@ -93,7 +93,11 @@ export default function RegisterPage() {
           </h1>
 
           <p className="mt-2 text-sm text-gray-600">
-            Join your society on SocietyPulse
+            Join your society on <img
+  src="/branding/societypulse-icon-square.svg"
+  alt="SocietyPulse"
+  className="mx-auto h-16 w-16"
+/>
           </p>
         </div>
 

@@ -54,9 +54,11 @@ export default function LoginPage() {
   
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg dark:bg-gray-900">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">
-            SocietyPulse
-          </h1>
+          <img
+  src="/branding/societypulse-icon-square.svg"
+  alt="SocietyPulse"
+  className="mx-auto h-16 w-16"
+/>
 
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             Sign in to manage your society
