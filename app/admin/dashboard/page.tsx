@@ -62,7 +62,22 @@ const complaints = await prisma.complaint.findMany({
   affectedResidentsEstimated: true,
 affectedResidentsVerified: true,
 
-  location: {
+statusHistory: {
+  where: {
+    status: {
+      in: ["RESOLVED", "CLOSED"],
+    },
+  },
+  orderBy: {
+    createdAt: "asc",
+  },
+  select: {
+    status: true,
+    createdAt: true,
+  },
+},
+
+location: {
     select: {
       name: true,
       block: true,
@@ -334,6 +349,23 @@ const totalImpact = complaints.length;
       complaint.status !== "RESOLVED" &&
       complaint.status !== "CLOSED",
   ).length;
+  const dueSoonComplaints = complaints.filter(
+  (complaint) => {
+    if (
+      complaint.dueAt === null ||
+      complaint.status === "RESOLVED" ||
+      complaint.status === "CLOSED"
+    ) {
+      return false;
+    }
+
+    const hoursUntilDue =
+      (complaint.dueAt.getTime() - now.getTime()) /
+      (1000 * 60 * 60);
+
+    return hoursUntilDue >= 0 && hoursUntilDue <= 24;
+  },
+).length;
 
   const complaintsWithSla = complaints.filter(
     (complaint) => complaint.dueAt !== null,
@@ -350,6 +382,71 @@ const totalImpact = complaints.length;
     complaintsWithSla > 0
       ? Math.round((completedWithSla / complaintsWithSla) * 100)
       : 100;
+      const slaByCategory = complaints.reduce(
+  (result, complaint) => {
+    if (complaint.dueAt === null) {
+      return result;
+    }
+
+    if (!result[complaint.category]) {
+      result[complaint.category] = {
+        total: 0,
+        completed: 0,
+      };
+    }
+
+    result[complaint.category].total += 1;
+
+    if (
+      complaint.status === "RESOLVED" ||
+      complaint.status === "CLOSED"
+    ) {
+      result[complaint.category].completed += 1;
+    }
+
+    return result;
+  },
+  {} as Record<
+    string,
+    {
+      total: number;
+      completed: number;
+    }
+  >,
+);
+
+const slaByPriority = complaints.reduce(
+  (result, complaint) => {
+    if (complaint.dueAt === null) {
+      return result;
+    }
+
+    if (!result[complaint.priorityLabel]) {
+      result[complaint.priorityLabel] = {
+        total: 0,
+        completed: 0,
+      };
+    }
+
+    result[complaint.priorityLabel].total += 1;
+
+    if (
+      complaint.status === "RESOLVED" ||
+      complaint.status === "CLOSED"
+    ) {
+      result[complaint.priorityLabel].completed += 1;
+    }
+
+    return result;
+  },
+  {} as Record<
+    string,
+    {
+      total: number;
+      completed: number;
+    }
+  >,
+);
         const highPriorityComplaints =
     (priorityCounts["HIGH"] || 0) +
     (priorityCounts["CRITICAL"] || 0);
@@ -381,6 +478,135 @@ const totalImpact = complaints.length;
       ? (resolvedComplaints + closedComplaints) /
         totalComplaints
       : 0;
+      const resolvedComplaintsWithTime = complaints
+  .map((complaint) => {
+    const resolutionEvent = complaint.statusHistory[0];
+
+    if (!resolutionEvent) {
+      return null;
+    }
+
+    const resolutionTime =
+      resolutionEvent.createdAt.getTime() -
+      complaint.createdAt.getTime();
+
+    return {
+      complaint,
+      resolutionTime,
+    };
+  })
+  .filter(
+    (
+      item,
+    ): item is {
+      complaint: (typeof complaints)[number];
+      resolutionTime: number;
+    } => item !== null && item.resolutionTime >= 0,
+  );
+
+const averageResolutionTimeHours =
+  resolvedComplaintsWithTime.length > 0
+    ? Math.round(
+        resolvedComplaintsWithTime.reduce(
+          (total, item) => total + item.resolutionTime,
+          0,
+        ) /
+          resolvedComplaintsWithTime.length /
+          (1000 * 60 * 60),
+      )
+    : 0;
+
+const resolutionByCategory = resolvedComplaintsWithTime.reduce(
+  (result, item) => {
+    const category = item.complaint.category;
+
+    if (!result[category]) {
+      result[category] = {
+        total: 0,
+        resolutionTime: 0,
+      };
+    }
+
+    result[category].total += 1;
+    result[category].resolutionTime += item.resolutionTime;
+
+    return result;
+  },
+  {} as Record<
+    string,
+    {
+      total: number;
+      resolutionTime: number;
+    }
+  >,
+);
+
+const resolutionByPriority = resolvedComplaintsWithTime.reduce(
+  (result, item) => {
+    const priority = item.complaint.priorityLabel;
+
+    if (!result[priority]) {
+      result[priority] = {
+        total: 0,
+        resolutionTime: 0,
+      };
+    }
+
+    result[priority].total += 1;
+    result[priority].resolutionTime += item.resolutionTime;
+
+    return result;
+  },
+  {} as Record<
+    string,
+    {
+      total: number;
+      resolutionTime: number;
+    }
+  >,
+);
+
+const openResolvedTrends = Object.entries(
+  complaints.reduce(
+    (counts, complaint) => {
+      const date = complaint.createdAt
+        .toISOString()
+        .split("T")[0];
+
+      if (!counts[date]) {
+        counts[date] = {
+          open: 0,
+          resolved: 0,
+        };
+      }
+
+      if (
+        complaint.status === "OPEN" ||
+        complaint.status === "IN_PROGRESS"
+      ) {
+        counts[date].open += 1;
+      }
+
+      if (
+        complaint.status === "RESOLVED" ||
+        complaint.status === "CLOSED"
+      ) {
+        counts[date].resolved += 1;
+      }
+
+      return counts;
+    },
+    {} as Record<
+      string,
+      {
+        open: number;
+        resolved: number;
+      }
+    >,
+  ),
+).sort(([dateA], [dateB]) =>
+  dateA.localeCompare(dateB),
+);
 
   const activeComplaintHealth =
     (1 - activeComplaintRate) * 100;
@@ -485,6 +711,19 @@ const totalImpact = complaints.length;
               {overdueComplaints}
             </p>
           </div>
+          <div className="rounded-xl bg-white p-6 shadow-sm">
+  <p className="text-sm font-medium text-gray-600">
+    SLA Due Soon
+  </p>
+
+  <p className="mt-2 text-3xl font-bold">
+    {dueSoonComplaints}
+  </p>
+
+  <p className="mt-1 text-xs text-gray-500">
+    Due within 24 hours
+  </p>
+</div>
         </div>
 
         {/* Secondary metrics */}
@@ -519,6 +758,269 @@ const totalImpact = complaints.length;
             </p>
           </div>
         </div>
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+  <div className="rounded-xl bg-white p-6 shadow-sm">
+    <h2 className="text-xl font-semibold">
+      SLA Performance by Category
+    </h2>
+
+    <div className="mt-4 space-y-3">
+      {Object.entries(slaByCategory)
+        .sort(([, a], [, b]) => b.total - a.total)
+        .map(([category, data]) => {
+          const compliance =
+            data.total > 0
+              ? Math.round(
+                  (data.completed / data.total) * 100,
+                )
+              : 0;
+
+          return (
+            <div
+              key={category}
+              className="flex items-center justify-between rounded-lg bg-gray-50 p-4"
+            >
+              <div>
+                <p className="font-medium text-gray-800">
+                  {category}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {data.completed}/{data.total} completed
+                </p>
+              </div>
+
+              <span className="text-lg font-semibold">
+                {compliance}%
+              </span>
+            </div>
+          );
+        })}
+
+      {Object.keys(slaByCategory).length === 0 && (
+        <p className="text-sm text-gray-600">
+          No SLA category data available yet.
+        </p>
+      )}
+    </div>
+  </div>
+
+  <div className="rounded-xl bg-white p-6 shadow-sm">
+    <h2 className="text-xl font-semibold">
+      SLA Performance by Priority
+    </h2>
+
+    <div className="mt-4 space-y-3">
+      {Object.entries(slaByPriority)
+        .sort(([, a], [, b]) => b.total - a.total)
+        .map(([priority, data]) => {
+          const compliance =
+            data.total > 0
+              ? Math.round(
+                  (data.completed / data.total) * 100,
+                )
+              : 0;
+
+          return (
+            <div
+              key={priority}
+              className="flex items-center justify-between rounded-lg bg-gray-50 p-4"
+            >
+              <div>
+                <p className="font-medium text-gray-800">
+                  {priority}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {data.completed}/{data.total} completed
+                </p>
+              </div>
+
+              <span className="text-lg font-semibold">
+                {compliance}%
+              </span>
+            </div>
+          );
+        })}
+
+      {Object.keys(slaByPriority).length === 0 && (
+        <p className="text-sm text-gray-600">
+          No SLA priority data available yet.
+        </p>
+      )}
+    </div>
+  </div>
+</div>
+{/* Resolution Analytics */}
+<div className="mt-8 grid gap-6 lg:grid-cols-2">
+  <div className="rounded-xl bg-white p-6 shadow-sm">
+    <h2 className="text-xl font-semibold">
+      Resolution Analytics
+    </h2>
+
+    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      <div className="rounded-lg bg-gray-50 p-4">
+        <p className="text-sm text-gray-600">
+          Resolution Rate
+        </p>
+
+        <p className="mt-1 text-3xl font-bold">
+          {Math.round(resolutionRate * 100)}%
+        </p>
+      </div>
+
+      <div className="rounded-lg bg-gray-50 p-4">
+        <p className="text-sm text-gray-600">
+          Avg. Resolution Time
+        </p>
+
+        <p className="mt-1 text-3xl font-bold">
+          {resolvedComplaintsWithTime.length > 0
+            ? `${averageResolutionTimeHours}h`
+            : "No Data"}
+        </p>
+      </div>
+    </div>
+
+    <p className="mt-4 text-sm text-gray-600">
+      Resolution metrics are calculated from complaints that
+      reached the resolved or closed state.
+    </p>
+  </div>
+
+  <div className="rounded-xl bg-white p-6 shadow-sm">
+    <h2 className="text-xl font-semibold">
+      Open vs Resolved
+    </h2>
+
+    <div className="mt-4 space-y-3">
+      {openResolvedTrends.length > 0 ? (
+        openResolvedTrends.map(([date, data]) => (
+          <div
+            key={date}
+            className="rounded-lg bg-gray-50 p-4"
+          >
+            <p className="text-sm font-medium text-gray-700">
+              {date}
+            </p>
+
+            <div className="mt-2 flex gap-6 text-sm">
+              <span>
+                Open:{" "}
+                <strong>{data.open}</strong>
+              </span>
+
+              <span>
+                Resolved:{" "}
+                <strong>{data.resolved}</strong>
+              </span>
+            </div>
+          </div>
+        ))
+      ) : (
+        <p className="text-sm text-gray-600">
+          No resolution trend data available yet.
+        </p>
+      )}
+    </div>
+  </div>
+</div>
+
+<div className="mt-8 grid gap-6 lg:grid-cols-2">
+  <div className="rounded-xl bg-white p-6 shadow-sm">
+    <h2 className="text-xl font-semibold">
+      Resolution Performance by Category
+    </h2>
+
+    <div className="mt-4 space-y-3">
+      {Object.entries(resolutionByCategory)
+        .sort(([, a], [, b]) => b.total - a.total)
+        .map(([category, data]) => {
+          const averageHours =
+            data.total > 0
+              ? Math.round(
+                  data.resolutionTime /
+                    data.total /
+                    (1000 * 60 * 60),
+                )
+              : 0;
+
+          return (
+            <div
+              key={category}
+              className="flex items-center justify-between rounded-lg bg-gray-50 p-4"
+            >
+              <div>
+                <p className="font-medium text-gray-800">
+                  {category}
+                </p>
+
+                <p className="text-xs text-gray-500">
+                  {data.total} resolved
+                </p>
+              </div>
+
+              <span className="text-lg font-semibold">
+                {averageHours}h
+              </span>
+            </div>
+          );
+        })}
+
+      {Object.keys(resolutionByCategory).length === 0 && (
+        <p className="text-sm text-gray-600">
+          No category resolution data available yet.
+        </p>
+      )}
+    </div>
+  </div>
+
+  <div className="rounded-xl bg-white p-6 shadow-sm">
+    <h2 className="text-xl font-semibold">
+      Resolution Performance by Priority
+    </h2>
+
+    <div className="mt-4 space-y-3">
+      {Object.entries(resolutionByPriority)
+        .sort(([, a], [, b]) => b.total - a.total)
+        .map(([priority, data]) => {
+          const averageHours =
+            data.total > 0
+              ? Math.round(
+                  data.resolutionTime /
+                    data.total /
+                    (1000 * 60 * 60),
+                )
+              : 0;
+
+          return (
+            <div
+              key={priority}
+              className="flex items-center justify-between rounded-lg bg-gray-50 p-4"
+            >
+              <div>
+                <p className="font-medium text-gray-800">
+                  {priority}
+                </p>
+
+                <p className="text-xs text-gray-500">
+                  {data.total} resolved
+                </p>
+              </div>
+
+              <span className="text-lg font-semibold">
+                {averageHours}h
+              </span>
+            </div>
+          );
+        })}
+
+      {Object.keys(resolutionByPriority).length === 0 && (
+        <p className="text-sm text-gray-600">
+          No priority resolution data available yet.
+        </p>
+      )}
+    </div>
+  </div>
+</div>
                {/* Maintenance Health Score */}
 <div className="mt-8 rounded-xl bg-white p-6 shadow-sm">
   <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -587,10 +1089,10 @@ const totalImpact = complaints.length;
           </h2>
 
           <p className="mt-2 text-gray-700">
-            Complaint analytics, recurring issues, hotspots,
-            SLA performance, and society health metrics will
-            appear here.
-          </p>
+  Monitor complaint patterns, recurring maintenance issues,
+  location hotspots, SLA performance, and resolution health
+  to identify areas that need attention.
+</p>
 
                    <div className="mt-6 grid gap-4 md:grid-cols-2">
             <div className="rounded-lg bg-gray-50 p-4">
